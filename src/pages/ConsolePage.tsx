@@ -11,12 +11,16 @@
 const LOCAL_RELAY_SERVER_URL: string =
   process.env.REACT_APP_LOCAL_RELAY_SERVER_URL || '';
 
+const DEMO_MODE: string = "SEARCH";
+//const DEMO_MODE: string = "BUILD";
+
 import { useEffect, useRef, useCallback, useState } from 'react';
 
 import { RealtimeClient } from '@openai/realtime-api-beta';
 import { ItemType } from '@openai/realtime-api-beta/dist/lib/client.js';
 import { WavRecorder, WavStreamPlayer } from '../lib/wavtools/index.js';
 import { search_instructions } from '../utils/conversation_config.js';
+import { add_fields_tool_definition, add_fields_tool_hander, build_instructions, read_document_tool_definition, read_document_tool_hander } from '../utils/build_tools';
 import { WavRenderer } from '../utils/wav_renderer';
 
 import { X, Edit, Zap, ArrowUp, ArrowDown } from 'react-feather';
@@ -166,6 +170,7 @@ export function ConsolePage() {
    */
   const connectConversation = useCallback(async () => {
     const client = clientRef.current;
+    client.updateSession({voice: DEMO_MODE === "SEARCH"? 'coral' : 'ash'});
     const wavRecorder = wavRecorderRef.current;
     const wavStreamPlayer = wavStreamPlayerRef.current;
 
@@ -379,31 +384,41 @@ export function ConsolePage() {
     const client = clientRef.current;
 
     // Set instructions
-    client.updateSession({ instructions: search_instructions });
+    if (DEMO_MODE === "SEARCH") {
+      client.updateSession({ instructions: search_instructions });
+    }
+    else if (DEMO_MODE === "BUILD") {
+      client.updateSession({ instructions: build_instructions });
+    }
     // Set transcription, otherwise we don't get user transcriptions back
     client.updateSession({ input_audio_transcription: { model: 'whisper-1' } });
 
-
-    // Add Search tool
-    client.addTool(search_tool_definition, search_tool_hander);
-    // Add Memory tool
-    client.addTool(memory_tool_definition,
-      async ({ key, value }: { [key: string]: any }) => {
-        setMemoryKv((memoryKv) => {
-          const newKv = { ...memoryKv };
-          newKv[key] = value;
-          return newKv;
-        });
-        return { ok: true };
-      }
-    );
-    // Add Weather tool
-    client.addTool(
-      weather_tool_definition,
-      async ({ lat, lng, location }: { [key: string]: any }) => {
-        return weather_tool_hander({ lat, lng, location, setMarker, setCoords });
-      }
-    );
+    if (DEMO_MODE === "SEARCH") {
+      // Add Search tool
+      client.addTool(search_tool_definition, search_tool_hander);
+      // Add Memory tool
+      client.addTool(memory_tool_definition,
+        async ({ key, value }: { [key: string]: any }) => {
+          setMemoryKv((memoryKv) => {
+            const newKv = { ...memoryKv };
+            newKv[key] = value;
+            return newKv;
+          });
+          return { ok: true };
+        }
+      );
+      // Add Weather tool
+      client.addTool(
+        weather_tool_definition,
+        async ({ lat, lng, location }: { [key: string]: any }) => {
+          return weather_tool_hander({ lat, lng, location, setMarker, setCoords });
+        }
+      );
+    } else if (DEMO_MODE === "BUILD") {
+      // Add read document tool
+      client.addTool(read_document_tool_definition, read_document_tool_hander);
+      client.addTool(add_fields_tool_definition, add_fields_tool_hander);
+    }
 
     // handle realtime events from client + server for event logging
     client.on('realtime.event', (realtimeEvent: RealtimeEvent) => {
