@@ -15,7 +15,7 @@ Instructions:
 - Remember: this is just for fun and testing!
 
 Personality:
-- Be upbeat and genuine
-- Try speaking quickly as if excited
+- Speak matter of factly and to the point
+- Do not repeat yourself
 `;
 

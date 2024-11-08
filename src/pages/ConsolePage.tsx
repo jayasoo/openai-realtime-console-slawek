@@ -12,7 +12,7 @@ const LOCAL_RELAY_SERVER_URL: string =
   process.env.REACT_APP_LOCAL_RELAY_SERVER_URL || '';
 
 const DEMO_MODE: string = "SEARCH";
-// const DEMO_MODE: string = "BUILD";
+//const DEMO_MODE: string = "BUILD";
 
 import { useEffect, useRef, useCallback, useState } from 'react';
 
@@ -20,7 +20,7 @@ import { RealtimeClient } from '@openai/realtime-api-beta';
 import { ItemType } from '@openai/realtime-api-beta/dist/lib/client.js';
 import { WavRecorder, WavStreamPlayer } from '../lib/wavtools/index.js';
 import { search_instructions } from '../utils/conversation_config.js';
-import { add_fields_tool_definition, add_fields_tool_hander, add_visual_field_tool_definition, add_visual_field_tool_hander, build_instructions, read_document_tool_definition, read_document_tool_hander } from '../utils/build_tools';
+import { add_fields_tool_definition, add_fields_tool_hander, add_reasoning_field_tool_definition, add_reasoning_field_tool_hander, add_visual_field_tool_definition, add_visual_field_tool_hander, build_instructions, read_document_tool_definition, read_document_tool_hander } from '../utils/build_tools';
 import { WavRenderer } from '../utils/wav_renderer';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -427,6 +427,7 @@ export function ConsolePage() {
       client.addTool(read_document_tool_definition, read_document_tool_hander);
       client.addTool(add_fields_tool_definition, add_fields_tool_hander);
       client.addTool(add_visual_field_tool_definition, add_visual_field_tool_hander);
+      client.addTool(add_reasoning_field_tool_definition, add_reasoning_field_tool_hander);
     }
 
     // handle realtime events from client + server for event logging

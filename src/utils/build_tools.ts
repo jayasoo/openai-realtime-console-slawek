@@ -20,7 +20,7 @@ AI Hub Build Apps:
 - There are few types of fields:
   * 'Text extraction fields': Used to extract information that can be presented as a simple key value pair. You only need to provide the filed name, like 'Name', 'Date of Birth', 'Address', etc.
   * 'Reasoning fields': Used for more complex cases that require reasoning or additional processing. Provide the field name and a natural language prompt describing what should be extracted and how to represent it.
-  * 'Visual Reasoning fields': Like the reasoning field but with access to the vision modality. Use to extract information present in images, charts etc.
+  * 'Visual Reasoning fields': Like the reasoning field but with access to the vision modality. Use to extract information present in images, charts etc. Only use when user explicitly asks for visual elements, otherwise use the regular Reasoning field.
 
 
 Documents you have accees to:
