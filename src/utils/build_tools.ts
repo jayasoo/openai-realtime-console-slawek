@@ -21,6 +21,8 @@ AI Hub Build Apps:
   * 'Text extraction fields': Used to extract information that can be presented as a simple key value pair. You only need to provide the filed name, like 'Name', 'Date of Birth', 'Address', etc.
   * 'Reasoning fields': Used for more complex cases that require reasoning or additional processing. Provide the field name and a natural language prompt describing what should be extracted and how to represent it.
   * 'Visual Reasoning fields': Like the reasoning field but with access to the vision modality. Use to extract information present in images, charts etc. Only use when user explicitly asks for visual elements, otherwise use the regular Reasoning field.
+- Use the provide tool to create new fields. You can also call it again with the same field name to update the prompt.
+- "Clean" functionality can add a post-processing logic to a field. Use the tool to add it to an existing field and specify the instructions like 'Make it lowercase'.
 
 
 Documents you have accees to:
@@ -66,6 +68,26 @@ export const add_fields_tool_definition =
     },
   }
 
+  export const remove_fields_tool_definition =
+  {
+      name: 'remove_fields',
+      description: 'Removes fields based on their names.',
+      parameters: {
+        type: 'object',
+        properties: {
+          field_names: {
+            type: 'array',
+              items: {
+                  type: 'string',
+              },
+            description:
+              'Name of the fields to remove',
+          },
+        },
+        required: ['field_names'],
+      },
+    }
+
 export const add_visual_field_tool_definition = 
   {
     name: 'add_visual_reasoning_field',
@@ -104,6 +126,28 @@ export const add_visual_field_tool_definition =
           type: 'string',
           description:
             'Natural language prompt to guide the extraction. Explain in detail what needs to be extracted and how to represent it.',
+        },
+      },
+      required: ['field_name', 'prompt'],
+    },
+  } 
+
+  export const add_clean_rule_tool_definition = 
+  {
+    name: 'add_clean_rule',
+    description: 'Creates a field of type Reasoning.',
+    parameters: {
+      type: 'object',
+      properties: {
+        field_name: {
+          type: 'string',
+          description:
+            'Name of the field to add the rule to.',
+        },
+        clean_prompt: {
+          type: 'string',
+          description:
+            'Natural language prompt with post processing instructions.',
         },
       },
       required: ['field_name', 'prompt'],
@@ -154,6 +198,20 @@ export const add_fields_tool_hander = async ({ field_names }: { [key: string]: a
       return json;
 }
 
+export const remove_fields_tool_hander = async ({ field_names }: { [key: string]: any }) => {
+    const result = await fetch('http://localhost:5000/remove_fields', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            field_names: field_names
+        }),
+      });
+      const json = await result.json();
+      return json;
+}
+
 export const add_visual_field_tool_hander = async ({ field_name, prompt }: { [key: string]: any }) => {
     const result = await fetch('http://localhost:5000/add_visual_field', {
         method: 'POST',
@@ -178,6 +236,21 @@ export const add_reasoning_field_tool_hander = async ({ field_name, prompt }: { 
         body: JSON.stringify({
             field_name: field_name,
             prompt: prompt
+        }),
+      });
+      const json = await result.json();
+      return json;
+}
+
+export const add_clean_tool_hander = async ({ field_name, clean_prompt }: { [key: string]: any }) => {
+    const result = await fetch('http://localhost:5000/add_clean', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            field_name: field_name,
+            clean_prompt: clean_prompt
         }),
       });
       const json = await result.json();
