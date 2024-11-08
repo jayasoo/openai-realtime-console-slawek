@@ -11,8 +11,8 @@
 const LOCAL_RELAY_SERVER_URL: string =
   process.env.REACT_APP_LOCAL_RELAY_SERVER_URL || '';
 
-//const DEMO_MODE: string = "SEARCH";
-const DEMO_MODE: string = "BUILD";
+const DEMO_MODE: string = "SEARCH";
+// const DEMO_MODE: string = "BUILD";
 
 import { useEffect, useRef, useCallback, useState } from 'react';
 
@@ -22,6 +22,8 @@ import { WavRecorder, WavStreamPlayer } from '../lib/wavtools/index.js';
 import { search_instructions } from '../utils/conversation_config.js';
 import { add_fields_tool_definition, add_fields_tool_hander, add_visual_field_tool_definition, add_visual_field_tool_hander, build_instructions, read_document_tool_definition, read_document_tool_hander } from '../utils/build_tools';
 import { WavRenderer } from '../utils/wav_renderer';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 import { X, Edit, Zap, ArrowUp, ArrowDown } from 'react-feather';
 import { Button } from '../components/button/Button';
@@ -131,6 +133,9 @@ export function ConsolePage() {
   });
   const [marker, setMarker] = useState<Coordinates | null>(null);
 
+  const [latestAIAnswer, setLatestAIAnswer] = useState<string>('');
+  const [functionCallStatus, setFunctionCallStatus] = useState<string>('');
+
   /**
    * Utility for formatting the timing of logs
    */
@@ -188,13 +193,14 @@ export function ConsolePage() {
 
     // Connect to realtime API
     await client.connect();
-    // client.sendUserMessageContent([
-    //   {
-    //     type: `input_text`,
-    //     text: `Hello!`,
-    //     // text: `For testing purposes, I want you to list ten car brands. Number each item, e.g. "one (or whatever number you are one): the item name".`
-    //   },
-    // ]);
+    if (DEMO_MODE === "SEARCH") {
+      client.sendUserMessageContent([
+        {
+          type: `input_text`,
+          text: `Hello!`,
+        },
+      ]);
+    }
 
     if (client.getTurnDetectionType() === 'server_vad') {
       await wavRecorder.record((data) => client.appendInputAudio(data.mono));
@@ -214,6 +220,8 @@ export function ConsolePage() {
       lng: -122.418137,
     });
     setMarker(null);
+    setLatestAIAnswer('');
+    setFunctionCallStatus('');
 
     const client = clientRef.current;
     client.disconnect();
@@ -466,6 +474,51 @@ export function ConsolePage() {
     };
   }, []);
 
+
+  useEffect(() => {
+    const assistantItems = items.filter(item => item.role === 'assistant');
+    if (assistantItems.length > 0) {
+      const lastAssistantItem = assistantItems[assistantItems.length - 1];
+      const lastAssistantItemContent = lastAssistantItem.formatted.transcript || lastAssistantItem.formatted.text || '';
+      setLatestAIAnswer(lastAssistantItemContent);
+    }
+    if (items.length > 0) {
+      const lastItem = items[items.length - 1];
+      if (lastItem.type === 'function_call') {
+        switch (lastItem.name) {
+          case 'get_weather':
+            setFunctionCallStatus('Getting weather information...');
+            break;
+          case 'set_memory':
+            setFunctionCallStatus('Saving to memory...');
+            break;
+          case 'search':
+            setFunctionCallStatus('Searching...');
+            break;
+          case 'read_document':
+            setFunctionCallStatus('Reading document...');
+            break;
+          case 'add_text_extractions_fields':
+            setFunctionCallStatus('Adding text extraction fields...');
+            break;
+          case 'add_visual_reasoning_field':
+            setFunctionCallStatus('Adding visual reasoning field...');
+            break;
+          case 'add_reasoning_field':
+            setFunctionCallStatus('Adding reasoning field...');
+            break;
+          default:
+            setFunctionCallStatus('Processing...');
+            break;
+        }
+      } else if (lastItem.type === 'function_call_output') {
+        setFunctionCallStatus('');
+      } else {
+        setFunctionCallStatus('');
+      }
+    }
+  }, [items]);
+
   /**
    * Render the application
    */
@@ -626,6 +679,23 @@ export function ConsolePage() {
                   </div>
                 );
               })}
+            </div>
+          </div>
+          <div className="content-block ai-speaker">
+            <div className="content-block-title">
+              <div className='aihub-title'>AI Hub Assistant</div>
+              <div className='function-call'>
+                {functionCallStatus && 
+                  <div className='function-call-status'>
+                    {functionCallStatus}
+                  </div>
+                }
+              </div>
+            </div>
+            <div className="content-block-body" data-conversation-content>
+              <div className="latest-ai-answer">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{latestAIAnswer}</ReactMarkdown>
+              </div>
             </div>
           </div>
           <div className="content-actions">
